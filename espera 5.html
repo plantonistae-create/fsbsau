@@ -181,6 +181,7 @@
 const STORAGE_KEY = 'clinica_chamadas_v1';
 const FB_CONFIG_KEY = 'clinica_firebase_config_v1';
 const FB_DB_PATH = 'estado';
+const SYNC_CHANNEL_NAME = 'clinica_sync_v1';
 
 // Configuração do projeto Firebase da clínica (já preenchida — não precisa colar manualmente)
 const DEFAULT_FIREBASE_CONFIG = {
@@ -462,6 +463,17 @@ window.addEventListener('storage', (e) => {
     try { aplicarDados(JSON.parse(e.newValue || '{}'), { tocarAoAtualizar: true }); } catch(err) {}
   }
 });
+
+// Canal direto entre abas/janelas do mesmo navegador (mais rápido/confiável que 'storage',
+// funciona inclusive quando os arquivos são abertos direto do disco via file://)
+try {
+  if ('BroadcastChannel' in window) {
+    const syncChannel = new BroadcastChannel(SYNC_CHANNEL_NAME);
+    syncChannel.onmessage = (e) => {
+      if (e.data) aplicarDados(e.data, { tocarAoAtualizar: true });
+    };
+  }
+} catch (e) { console.warn('BroadcastChannel indisponível:', e); }
 
 // Relógio
 setInterval(atualizarClock, 15000);
