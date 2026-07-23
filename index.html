@@ -225,6 +225,16 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script>
 const STORAGE_KEY = 'clinica_chamadas_v1';
+const SYNC_CHANNEL_NAME = 'clinica_sync_v1';
+
+// Canal de comunicação instantâneo entre abas/janelas do mesmo navegador
+// (mais rápido e confiável que o evento 'storage', inclusive em arquivos abertos via file://)
+let syncChannel = null;
+try {
+  if ('BroadcastChannel' in window) {
+    syncChannel = new BroadcastChannel(SYNC_CHANNEL_NAME);
+  }
+} catch (e) { console.warn('BroadcastChannel indisponível:', e); }
 
 let chamadas = [];
 let somAtivo = true;
@@ -236,6 +246,9 @@ function salvarStorage() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ nomeclinica, consultoriosCfg, profissionaisCfg, chamadas, somAtivo }));
   } catch(e) {}
+  if (syncChannel) {
+    try { syncChannel.postMessage({ nomeclinica, consultoriosCfg, profissionaisCfg, chamadas, somAtivo }); } catch(e) {}
+  }
   enviarSync();
 }
 
